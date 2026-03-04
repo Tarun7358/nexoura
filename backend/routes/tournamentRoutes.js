@@ -124,13 +124,16 @@ router.post("/:id/join", authMiddleware, async (req, res) => {
 
     const tournamentRef = db.collection("tournaments").doc(tournamentId);
     const userRef = db.collection("users").doc(userId);
+    const walletRef = db.collection("wallets").doc(userId);
     const registrationId = `${tournamentId}_${userId}`;
     const registrationRef = db.collection("registrations").doc(registrationId);
+    const transactionRef = db.collection("transactions").doc();
 
     await db.runTransaction(async (transaction) => {
 
       const tournamentDoc = await transaction.get(tournamentRef);
       const userDoc = await transaction.get(userRef);
+      const walletDoc = await transaction.get(walletRef);
       const registrationDoc = await transaction.get(registrationRef);
 
       if (!tournamentDoc.exists) {
@@ -138,6 +141,9 @@ router.post("/:id/join", authMiddleware, async (req, res) => {
       }
       if (!userDoc.exists) {
         throw new Error("User not found");
+      }
+      if (!walletDoc.exists) {
+        throw new Error("Wallet not found");
       }
       if (registrationDoc.exists) {
         throw new Error("User already registered");
@@ -147,6 +153,8 @@ router.post("/:id/join", authMiddleware, async (req, res) => {
       const user = userDoc.data();
       const maxAllowed = Number(tournament.maxPlayers || tournament.maxParticipants || 0);
       const current = Number(tournament.currentParticipants || tournament.registeredPlayers || 0);
+      const entryFee = Number(tournament.entryFee || 0);
+      const currentBalance = Number(walletDoc.data()?.balance || 0);
 
       if (maxAllowed > 0 && current >= maxAllowed) {
         throw new Error("Tournament is full");
@@ -155,12 +163,25 @@ router.post("/:id/join", authMiddleware, async (req, res) => {
       if (tournament.participants.includes(userId)) {
         throw new Error("User already joined");
       }
+      if (currentBalance < entryFee) {
+        throw new Error("Insufficient wallet balance");
+      }
 
       transaction.update(tournamentRef, {
         participants: admin.firestore.FieldValue.arrayUnion(userId),
         currentParticipants: current + 1,
         registeredPlayers: current + 1
       });
+
+      transaction.set(
+        walletRef,
+        {
+          userId,
+          balance: currentBalance - entryFee,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
 
       transaction.set(registrationRef, {
         registrationId,
@@ -169,14 +190,88 @@ router.post("/:id/join", authMiddleware, async (req, res) => {
         username: user.gamerTag || user.username || user.email || "Player",
         gamingUID: user.gamingUID || "",
         teamName: teamName || "",
-        paymentStatus: Number(tournament.entryFee || 0) > 0 ? "pending" : "success",
+        paymentStatus: "success",
         registeredAt: new Date()
+      });
+
+      transaction.set(transactionRef, {
+        userId,
+        tournamentId,
+        type: "entry_fee",
+        amount: entryFee,
+        status: "success",
+        createdAt: new Date(),
       });
 
     });
 
     res.json({ message: "Joined tournament successfully" });
 
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// ================= PAYOUT WINNER =================
+router.post("/:id/payout", authMiddleware, async (req, res) => {
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const tournamentId = req.params.id;
+    const { userId, amount } = req.body;
+    const payoutAmount = Number(amount);
+
+    if (!userId || !payoutAmount || payoutAmount <= 0) {
+      return res.status(400).json({ message: "userId and amount are required" });
+    }
+
+    const tournamentRef = db.collection("tournaments").doc(tournamentId);
+    const userRef = db.collection("users").doc(userId);
+    const walletRef = db.collection("wallets").doc(userId);
+    const transactionRef = db.collection("transactions").doc();
+
+    await db.runTransaction(async (transaction) => {
+      const tournamentDoc = await transaction.get(tournamentRef);
+      const userDoc = await transaction.get(userRef);
+      const walletDoc = await transaction.get(walletRef);
+
+      if (!tournamentDoc.exists) throw new Error("Tournament not found");
+      if (!userDoc.exists) throw new Error("User not found");
+
+      const wallet = walletDoc.exists ? walletDoc.data() : { balance: 0 };
+      const newBalance = Number(wallet.balance || 0) + payoutAmount;
+      const user = userDoc.data();
+
+      transaction.set(
+        walletRef,
+        {
+          userId,
+          balance: newBalance,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      transaction.update(userRef, {
+        earnings: Number(user.earnings || 0) + payoutAmount,
+        wins: Number(user.wins || 0) + 1,
+        updatedAt: new Date(),
+      });
+
+      transaction.set(transactionRef, {
+        userId,
+        tournamentId,
+        type: "reward",
+        amount: payoutAmount,
+        status: "success",
+        awardedBy: req.userId,
+        createdAt: new Date(),
+      });
+    });
+
+    res.json({ message: "Payout added successfully" });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

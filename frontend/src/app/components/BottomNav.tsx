@@ -11,7 +11,7 @@ export default function BottomNav({ onLogout }: BottomNavProps) {
   const navItems = [
     { label: "Home", path: "/app" },
     { label: "Tournaments", path: "/app/tournaments" },
-    { label: "Team", path: "/app/team" },
+    { label: "Wallet", path: "/app/wallet" },
     { label: "Leaderboard", path: "/app/leaderboard" },
     { label: "Profile", path: "/app/profile" },
   ];

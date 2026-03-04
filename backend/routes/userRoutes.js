@@ -82,7 +82,8 @@ router.post("/register", async (req, res) => {
       gamingUID: gamingUID || "",
       password: hashedPassword,
       provider: "password",
-      balance: 100,
+      balance: 0,
+      profileCompleted: false,
       tournamentsJoined: 0,
       wins: 0,
       kills: 0,
@@ -103,7 +104,9 @@ router.post("/register", async (req, res) => {
 
     await walletRef.set({
       userId: userRef.id,
-      balance: 100,
+      balance: 0,
+      totalDeposited: 0,
+      totalWithdrawn: 0,
       createdAt: new Date(),
     });
 
@@ -118,8 +121,9 @@ router.post("/register", async (req, res) => {
         gamerTag: finalUsername,
         email,
         gamingUID: gamingUID || "",
-        balance: 100,
+        balance: 0,
         walletId: walletRef.id,
+        profileCompleted: false,
         role: "user",
       },
     });
@@ -173,6 +177,7 @@ router.post("/login", async (req, res) => {
         earnings: Number(user.earnings || 0),
         balance: user.balance,
         stats: user.stats,
+        profileCompleted: user.profileCompleted ?? true,
         role: user.role,
       },
     });
@@ -219,7 +224,8 @@ router.post("/google-login", async (req, res) => {
         profileImage: decodedToken.picture || null,
         gamingUID: "",
         provider: "google",
-        balance: 100,
+        balance: 0,
+        profileCompleted: false,
         tournamentsJoined: 0,
         wins: 0,
         kills: 0,
@@ -238,7 +244,9 @@ router.post("/google-login", async (req, res) => {
 
       await db.collection("wallets").doc(uid).set({
         userId: uid,
-        balance: 100,
+        balance: 0,
+        totalDeposited: 0,
+        totalWithdrawn: 0,
         createdAt: new Date(),
       });
     } else {
@@ -249,7 +257,9 @@ router.post("/google-login", async (req, res) => {
       if (!walletDoc.exists) {
         await walletRef.set({
           userId: uid,
-          balance: userData.balance ?? 100,
+          balance: userData.balance ?? 0,
+          totalDeposited: 0,
+          totalWithdrawn: 0,
           createdAt: new Date(),
         });
       }
@@ -276,8 +286,9 @@ router.post("/google-login", async (req, res) => {
         wins: Number(userData.wins || 0),
         kills: Number(userData.kills || 0),
         earnings: Number(userData.earnings || 0),
-        balance: userData.balance ?? 100,
+        balance: userData.balance ?? 0,
         stats: userData.stats || { wins: 0, matches: 0, points: 0 },
+        profileCompleted: userData.profileCompleted ?? true,
         role: userData.role || "user",
       },
     });
@@ -316,18 +327,24 @@ router.put("/:userId", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const { gamerTag, username, profileImage, gamingUID, avatar, phone } = req.body;
+    const { gamerTag, username, profileImage, gamingUID, avatar, phone, profileCompleted } = req.body;
 
     const userRef = db.collection("users").doc(req.params.userId);
 
-    await userRef.update({
+    const updates = {
       gamerTag: gamerTag || username,
       username: username || gamerTag,
       profileImage: profileImage || avatar || null,
       gamingUID: gamingUID || "",
       phone,
       updatedAt: new Date(),
-    });
+    };
+
+    if (typeof profileCompleted === "boolean") {
+      updates.profileCompleted = profileCompleted;
+    }
+
+    await userRef.update(updates);
 
     const updatedUser = await userRef.get();
 

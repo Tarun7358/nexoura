@@ -1,232 +1,171 @@
 import { motion } from "motion/react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import NeonCard from "../components/NeonCard";
 import { GlowButton } from "../components/GlowButton";
-import { Wallet, Bell, Trophy, Swords, Megaphone, DollarSign, Clock, Users, Shield } from "lucide-react";
-import { useNavigate } from "react-router";
-import API from "../services/api";
-import { useEffect } from "react";
+import { Wallet, Trophy, Users, CalendarDays, Shield } from "lucide-react";
+import { authAPI, tournamentAPI, walletAPI } from "../api/apiclient";
 
 export default function HomeScreen() {
   const navigate = useNavigate();
+  const userId = localStorage.getItem("nexouraUserId") || "";
+  const role = localStorage.getItem("nexouraRole") || "user";
+
+  const [profile, setProfile] = useState<any>(null);
+  const [wallet, setWallet] = useState<any>({ balance: 0 });
+  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    API.get("/tournaments")
-      .then((res) => console.log(res.data))
-      .catch((err) => console.log(err));
-  }, []);
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-  const liveScrimData = [
-    { id: 1, title: "Solo Ranked Scrim", slots: "8/10", time: "Starting in 5m", prize: "$50" },
-    { id: 2, title: "Squad Battle Royale", slots: "12/16", time: "Starting in 12m", prize: "$100" },
-  ];
+        const [profileRes, walletRes, tournamentsRes] = await Promise.all([
+          userId ? authAPI.getProfile(userId) : Promise.resolve({ data: null }),
+          walletAPI.getBalance(),
+          tournamentAPI.getAll(),
+        ]);
 
-  const upcomingTournaments = [
-    { id: 1, title: "Weekend Warriors Cup", date: "Mar 6, 2026", prize: "$5,000", slots: "45/64" },
-    { id: 2, title: "Spring Championship", date: "Mar 10, 2026", prize: "$10,000", slots: "28/32" },
+        setProfile(profileRes?.data || null);
+        setWallet(walletRes?.data || { balance: 0 });
+        setTournaments(Array.isArray(tournamentsRes?.data) ? tournamentsRes.data : []);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || "Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [userId]);
+
+  const upcoming = useMemo(() => {
+    return tournaments
+      .filter((t) => String(t.status || "Upcoming").toLowerCase() !== "completed")
+      .slice(0, 4);
+  }, [tournaments]);
+
+  const formatDate = (value: any) => {
+    if (!value) return "TBD";
+    if (typeof value === "string") return new Date(value).toLocaleString();
+    if (value?._seconds) return new Date(value._seconds * 1000).toLocaleString();
+    return "TBD";
+  };
+
+  const statCards = [
+    { label: "Tournaments Joined", value: Number(profile?.tournamentsJoined || 0), color: "text-[#00d4ff]" },
+    { label: "Wins", value: Number(profile?.wins || 0), color: "text-[#10b981]" },
+    { label: "Earnings", value: `Rs.${Number(profile?.earnings || 0)}`, color: "text-[#a855f7]" },
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[#00d4ff]/10 to-[#a855f7]/10 border-b border-border p-6">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center justify-between mb-4">
+      <div className="border-b border-border bg-gradient-to-br from-[#00d4ff]/10 to-[#7c3aed]/10 p-4 sm:p-6">
+        <div className="mx-auto max-w-lg">
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-muted-foreground text-sm">Welcome back,</h3>
-              <h2 className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
-                ProGamer_X
-              </h2>
+              <p className="text-xs text-muted-foreground">Welcome</p>
+              <h2 className="text-xl sm:text-2xl">{profile?.username || profile?.gamerTag || "Player"}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">UID: {profile?.gamingUID || "Not set"}</p>
             </div>
-            <div className="flex items-center gap-3">
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate("/app/admin")}
-                className="p-2 bg-gradient-to-br from-[#a855f7] to-[#ec4899] rounded-full shadow-[0_0_15px_rgba(168,85,247,0.5)]"
-                title="Admin Panel"
-              >
-                <Shield className="w-5 h-5 text-white" />
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                className="relative p-2 bg-card rounded-full border border-border"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#ef4444] rounded-full" />
-              </motion.button>
-              <div className="flex items-center gap-2 bg-card border border-border rounded-full px-4 py-2">
-                <Wallet className="w-4 h-4 text-[#00d4ff]" />
-                <span className="text-sm">2,450</span>
+
+            <div className="flex items-center gap-2">
+              {role === "admin" ? (
+                <button
+                  onClick={() => navigate("/app/admin")}
+                  className="rounded-lg bg-gradient-to-r from-[#7c3aed] to-[#a855f7] p-2"
+                  title="Admin"
+                >
+                  <Shield className="h-4 w-4 text-white" />
+                </button>
+              ) : null}
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                <Wallet className="h-4 w-4 text-[#00d4ff]" />
+                <span className="text-sm">Rs.{Number(wallet?.balance || 0)}</span>
               </div>
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <NeonCard glowColor="blue" className="text-center">
-              <Trophy className="w-5 h-5 text-[#00d4ff] mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">Wins</p>
-              <p className="text-lg">127</p>
-            </NeonCard>
-            <NeonCard glowColor="purple" className="text-center">
-              <Swords className="w-5 h-5 text-[#a855f7] mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">Matches</p>
-              <p className="text-lg">342</p>
-            </NeonCard>
-            <NeonCard glowColor="green" className="text-center">
-              <DollarSign className="w-5 h-5 text-[#10b981] mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">Earned</p>
-              <p className="text-lg">$890</p>
-            </NeonCard>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {statCards.map((stat) => (
+              <NeonCard key={stat.label} glowColor="blue" className="text-center">
+                <p className="text-[10px] leading-tight text-muted-foreground sm:text-xs">{stat.label}</p>
+                <p className={`mt-1 text-sm sm:text-base ${stat.color}`}>{stat.value}</p>
+              </NeonCard>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-lg mx-auto p-6 space-y-6">
-        {/* Live Scrims */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Swords className="w-5 h-5 text-[#ef4444]" />
-              <h3>Live Scrims</h3>
-              <motion.div
-                animate={{ opacity: [1, 0.5, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="w-2 h-2 bg-[#ef4444] rounded-full"
-              />
-            </div>
-            <button className="text-sm text-primary hover:underline">View All</button>
-          </div>
+      <div className="mx-auto max-w-lg space-y-4 p-4 sm:p-6">
+        {error ? (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</div>
+        ) : null}
 
-          <div className="space-y-3">
-            {liveScrimData.map((scrim) => (
-              <NeonCard 
-                key={scrim.id} 
-                glowColor="blue"
-                onClick={() => navigate(`/app/scrims/${scrim.id}`)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="mb-1">{scrim.title}</h4>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{scrim.time}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        <span>{scrim.slots}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[#10b981] mb-1">{scrim.prize}</p>
-                    <GlowButton variant="primary" className="text-xs px-4 py-1.5">
-                      Join
-                    </GlowButton>
-                  </div>
-                </div>
-              </NeonCard>
-            ))}
-          </div>
-        </div>
-
-        {/* Upcoming Tournaments */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-[#00d4ff]" />
-              <h3>Upcoming Tournaments</h3>
-            </div>
-            <button 
-              onClick={() => navigate("/app/tournaments")}
-              className="text-sm text-primary hover:underline"
-            >
-              View All
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {upcomingTournaments.map((tournament) => (
-              <NeonCard key={tournament.id} glowColor="purple">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="mb-2">{tournament.title}</h4>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3" />
-                        <span>{tournament.date}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="w-3 h-3" />
-                        <span>{tournament.slots} Registered</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] px-3 py-1 rounded-lg mb-2">
-                      <p className="text-xs text-black">Prize Pool</p>
-                      <p className="text-black">{tournament.prize}</p>
-                    </div>
-                    <GlowButton variant="secondary" className="text-xs px-4 py-1.5">
-                      Register
-                    </GlowButton>
-                  </div>
-                </div>
-              </NeonCard>
-            ))}
-          </div>
-        </div>
-
-        {/* Announcements */}
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Megaphone className="w-5 h-5 text-[#f59e0b]" />
-            <h3>Announcements</h3>
-          </div>
-
-          <NeonCard glowColor="pink">
-            <div className="flex items-start gap-3">
-              <div className="bg-[#ec4899]/20 p-2 rounded-lg">
-                <Megaphone className="w-5 h-5 text-[#ec4899]" />
-              </div>
-              <div className="flex-1">
-                <h4 className="mb-1">New Season Starting Soon!</h4>
-                <p className="text-sm text-muted-foreground">
-                  Season 5 begins March 15th with exclusive rewards and new tournaments.
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">2 hours ago</p>
-              </div>
-            </div>
+        {loading ? (
+          <NeonCard>
+            <p className="text-sm text-muted-foreground">Loading dashboard...</p>
           </NeonCard>
-        </div>
-
-        {/* Prize Pool Highlights */}
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <DollarSign className="w-5 h-5 text-[#10b981]" />
-            <h3>Prize Pool Highlights</h3>
-          </div>
-
-          <NeonCard glowColor="green" className="bg-gradient-to-br from-[#10b981]/10 to-transparent">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Total Active Prize Pools</p>
-              <h2 className="bg-gradient-to-r from-[#10b981] to-[#00d4ff] bg-clip-text text-transparent mb-4" style={{ fontSize: "2.5rem" }}>
-                $45,000
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Tournaments</p>
-                  <p className="text-lg text-[#00d4ff]">12</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Daily Scrims</p>
-                  <p className="text-lg text-[#a855f7]">24</p>
-                </div>
-              </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base sm:text-lg">Upcoming Tournaments</h3>
+              <button className="text-sm text-primary" onClick={() => navigate("/app/tournaments")}>View All</button>
             </div>
-          </NeonCard>
-        </div>
+
+            {upcoming.length === 0 ? (
+              <NeonCard>
+                <p className="text-sm text-muted-foreground">No tournaments created yet. Admin-created tournaments will appear here.</p>
+              </NeonCard>
+            ) : (
+              upcoming.map((tournament, index) => {
+                const current = Number(tournament.currentParticipants || tournament.registeredPlayers || 0);
+                const max = Number(tournament.maxParticipants || tournament.maxPlayers || 0);
+
+                return (
+                  <motion.div key={tournament.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                    <NeonCard glowColor="purple">
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="text-sm sm:text-base">{tournament.title || tournament.name}</h4>
+                            <p className="text-xs text-muted-foreground">{String(tournament.mode || "squad").toUpperCase()} | {tournament.game || "BGMI"}</p>
+                          </div>
+                          <span className="rounded-md bg-[#10b981]/20 px-2 py-1 text-xs text-[#10b981]">Rs.{Number(tournament.prizePool || 0)}</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" />{formatDate(tournament.startTime || tournament.startDate)}</div>
+                          <div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{current}/{max || 0} players</div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground">Entry Fee: Rs.{Number(tournament.entryFee || 0)}</p>
+                          <GlowButton className="px-4 py-2 text-xs" onClick={() => navigate("/app/tournaments")}>Join</GlowButton>
+                        </div>
+                      </div>
+                    </NeonCard>
+                  </motion.div>
+                );
+              })
+            )}
+
+            <NeonCard glowColor="green">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Wallet Balance</p>
+                  <h3 className="text-lg">Rs.{Number(wallet?.balance || 0)}</h3>
+                </div>
+                <GlowButton variant="primary" className="px-4 py-2 text-xs" onClick={() => navigate("/app/wallet")}>
+                  Add Money
+                </GlowButton>
+              </div>
+            </NeonCard>
+          </>
+        )}
       </div>
     </div>
   );

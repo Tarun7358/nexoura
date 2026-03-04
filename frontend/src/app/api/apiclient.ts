@@ -47,6 +47,7 @@ api.interceptors.response.use(
       localStorage.removeItem("nexouraToken");
       localStorage.removeItem("nexouraUserId");
       localStorage.removeItem("nexouraRole");
+      localStorage.removeItem("nexouraProfileCompleted");
       window.location.href = "/login";
     }
 
@@ -96,6 +97,9 @@ export const tournamentAPI = {
 
   delete: (id) =>
     api.delete(`/tournaments/${id}`),
+
+  payout: (id, payload) =>
+    api.post(`/tournaments/${id}/payout`, payload),
 };
 
 export const walletAPI = {

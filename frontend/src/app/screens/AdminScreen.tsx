@@ -14,6 +14,10 @@ export default function AdminScreen() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
+  const [payoutTournamentId, setPayoutTournamentId] = useState("");
+  const [payoutUserId, setPayoutUserId] = useState("");
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payingOut, setPayingOut] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -87,6 +91,32 @@ export default function AdminScreen() {
       setError(err?.response?.data?.message || "Failed to create tournament. Ensure your user role is admin.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePayout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!payoutTournamentId || !payoutUserId || !payoutAmount) {
+      setError("Tournament, winner user ID and payout amount are required");
+      return;
+    }
+
+    try {
+      setPayingOut(true);
+      await tournamentAPI.payout(payoutTournamentId, {
+        userId: payoutUserId,
+        amount: Number(payoutAmount),
+      });
+      setSuccess("Winner payout completed");
+      setPayoutUserId("");
+      setPayoutAmount("");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to process payout");
+    } finally {
+      setPayingOut(false);
     }
   };
 
@@ -204,13 +234,38 @@ export default function AdminScreen() {
         {activeTab === "manage" && (
           <div className="space-y-3">
             <NeonCard glowColor="blue">
-              <p className="text-sm text-muted-foreground">
-                Tournament management actions can be added here (edit/delete, dispute handling, prize approvals).
-              </p>
+              <form className="space-y-3" onSubmit={handlePayout}>
+                <h3 className="mb-2">Winner Payout</h3>
+                <select
+                  value={payoutTournamentId}
+                  onChange={(e) => setPayoutTournamentId(e.target.value)}
+                  className="h-11 w-full rounded-lg border border-border bg-input-background px-3 text-sm"
+                >
+                  <option value="">Select tournament</option>
+                  {tournaments.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({String(t.mode || "squad").toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={payoutUserId}
+                  onChange={(e) => setPayoutUserId(e.target.value)}
+                  placeholder="Winner User ID"
+                  className="h-11 w-full rounded-lg border border-border bg-input-background px-3 text-sm"
+                />
+                <input
+                  type="number"
+                  value={payoutAmount}
+                  onChange={(e) => setPayoutAmount(e.target.value)}
+                  placeholder="Payout amount (Rs.)"
+                  className="h-11 w-full rounded-lg border border-border bg-input-background px-3 text-sm"
+                />
+                <GlowButton type="submit" variant="primary" className="w-full" disabled={payingOut}>
+                  {payingOut ? "Processing..." : "Credit Winner Wallet"}
+                </GlowButton>
+              </form>
             </NeonCard>
-            <GlowButton variant="primary" className="w-full" onClick={loadTournaments}>
-              Refresh Tournament Data
-            </GlowButton>
           </div>
         )}
       </div>

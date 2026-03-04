@@ -31,6 +31,7 @@ export default function SignupScreen() {
       localStorage.setItem("nexouraToken", token);
       localStorage.setItem("nexouraUserId", response.data?.userId || "");
       localStorage.setItem("nexouraRole", response.data?.user?.role || "user");
+      localStorage.setItem("nexouraProfileCompleted", String(response.data?.user?.profileCompleted ?? false));
       navigate("/app");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Signup failed");
