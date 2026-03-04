@@ -1,0 +1,180 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is admin
+    function isAdmin(userId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
+    }
+    
+    // Check if user owns this document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check if user is moderator or admin
+    function isModerator(userId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(userId)).data;
+      return isAuthenticated() && (userDoc.role == 'moderator' || userDoc.role == 'admin');
+    }
+    
+    // ==================== USER DOCUMENTS ====================
+    
+    // /users/{userId}
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      
+      // Allow reading basic public info (for leaderboards, profiles)
+      allow read: if isAuthenticated() && 
+                     resource.data.keys().hasAll(['name', 'uid']) &&
+                     !('walletBalance' in resource.data);
+      
+      // Users can only update their own profile (limited fields)
+      allow update: if isOwner(userId) &&
+                       !('role' in request.resource.data.diff(resource.data).addedKeys()) &&
+                       !('walletBalance' in request.resource.data.diff(resource.data).addedKeys()) &&
+                       !('totalEarnings' in request.resource.data.diff(resource.data).addedKeys());
+      
+      // Write operations are blocked on demand (Cloud Functions handle updates)
+      allow write: if false;
+      
+      // ==================== USER SUBCOLLECTIONS ====================
+      
+      // /users/{userId}/wallet/{document}
+      match /wallet/{document=**} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Cloud Functions only
+      }
+      
+      // /users/{userId}/notifications/{notificationId}
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Cloud Functions only
+      }
+      
+      // /users/{userId}/teams/{teamId}
+      match /teams/{teamId} {
+        allow read: if isOwner(userId) || isAuthenticated();
+        allow write: if false; // Cloud Functions + admin
+      }
+    }
+    
+    // ==================== SCRIMS ====================
+    
+    // /scrims/{scrimId}
+    match /scrims/{scrimId} {
+      // Authenticated users can list and view scrims
+      allow read: if isAuthenticated();
+      
+      // Only admins can create scrims
+      allow create: if isAdmin(request.auth.uid) &&
+                       request.resource.data.keys().hasAll([
+                         'title', 'game', 'mode', 'entryFee', 'prizePool',
+                         'slots', 'status', 'createdBy'
+                       ]) &&
+                       request.resource.data.status in ['upcoming', 'ongoing', 'completed', 'cancelled'] &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Only creators (admins) can update/delete
+      allow update: if isAdmin(request.auth.uid) &&
+                       resource.data.createdBy == request.auth.uid;
+      
+      allow delete: if isAdmin(request.auth.uid) &&
+                       resource.data.createdBy == request.auth.uid;
+    }
+    
+    // ==================== WALLET TRANSACTIONS (AUDIT LOG) ====================
+    
+    // /wallettransactions/{transactionId}
+    match /wallettransactions/{transactionId} {
+      // Owner can read their own transactions
+      allow read: if isOwner(resource.data.userId);
+      
+      // Admins can view all for auditing
+      allow read: if isAdmin(request.auth.uid);
+      
+      // Cloud Functions only writes
+      allow write: if false;
+    }
+    
+    // ==================== TOURNAMENTS ====================
+    
+    // /tournaments/{tournamentId}
+    match /tournaments/{tournamentId} {
+      // Authenticated users can view
+      allow read: if isAuthenticated();
+      
+      // Only admins can create/modify
+      allow create, update, delete: if isAdmin(request.auth.uid);
+      
+      // Subcollections for tournament details
+      match /{document=**} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin(request.auth.uid);
+      }
+    }
+    
+    // ==================== TEAMS ====================
+    
+    // /teams/{teamId}
+    match /teams/{teamId} {
+      // Authenticated users can list
+      allow read: if isAuthenticated();
+      
+      // Team members can update their own team
+      allow update: if isAuthenticated() &&
+                       (request.auth.uid in resource.data.members ||
+                        request.auth.uid == resource.data.captain);
+      
+      // Only team captain can disband
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.captain;
+      
+      // Anyone can create team (handled by Cloud Function)
+      allow create: if isAuthenticated();
+      
+      // Member invitations subcollection
+      match /invitations/{inviteId} {
+        allow read: if isAuthenticated();
+        allow write: if false; // Cloud Functions only
+      }
+    }
+    
+    // ==================== NOTIFICATIONS ====================
+    
+    // /notifications/{notificationId}
+    match /notifications/{notificationId} {
+      // Users can read their notifications
+      allow read: if isAuthenticated() && 
+                     request.auth.uid in resource.data.recipients;
+      
+      // Admins can send notifications
+      allow create: if isAdmin(request.auth.uid);
+      
+      allow delete: if isOwner(resource.data.createdBy);
+    }
+    
+    // ==================== ADMIN PANEL ====================
+    
+    // /admin/{adminId}/reports/{reportId}
+    match /admin/{adminId}/{document=**} {
+      allow read: if isAdmin(request.auth.uid);
+      allow write: if isAdmin(request.auth.uid);
+    }
+    
+    // ==================== DENY ALL BY DEFAULT ====================
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

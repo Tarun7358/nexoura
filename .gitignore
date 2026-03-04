@@ -1,0 +1,14 @@
+node_modules/
+**/node_modules/
+frontend/dist/
+android/.gradle/
+android/build/
+android/app/build/
+backend/.env
+frontend/.env
+backend/serviceAccountKey.json
+serviceAccountKey.json
+google-services.json
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "git": "^0.1.5"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0"
+  }
+}
