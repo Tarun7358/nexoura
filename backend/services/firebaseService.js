@@ -1,9 +1,47 @@
 const admin = require("firebase-admin");
-const serviceAccount = require("../serviceAccountKey.json");
+const fs = require("fs");
+const path = require("path");
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+function getFirebaseCredential() {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    return admin.credential.cert(serviceAccount);
+  }
+
+  if (
+    process.env.FIREBASE_PROJECT_ID &&
+    process.env.FIREBASE_CLIENT_EMAIL &&
+    process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    return admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+    });
+  }
+
+  const localServiceAccountPath = path.join(__dirname, "../serviceAccountKey.json");
+  if (fs.existsSync(localServiceAccountPath)) {
+    const serviceAccount = require(localServiceAccountPath);
+    return admin.credential.cert(serviceAccount);
+  }
+
+  throw new Error(
+    "Firebase credentials not found. Set FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY."
+  );
+}
+
+if (!admin.apps.length) {
+  const options = {
+    credential: getFirebaseCredential(),
+  };
+
+  if (process.env.FIREBASE_DATABASE_URL) {
+    options.databaseURL = process.env.FIREBASE_DATABASE_URL;
+  }
+
+  admin.initializeApp(options);
+}
 
 const db = admin.firestore();
 const auth = admin.auth();
