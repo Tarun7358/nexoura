@@ -13,6 +13,7 @@ const API_BASE_URL = normalizedBaseHost.endsWith("/api")
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -34,17 +35,23 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
-      if (error.response.status === 401) {
-        localStorage.removeItem("nexouraToken");
-        localStorage.removeItem("nexouraUserId");
-        localStorage.removeItem("nexouraRole");
-        window.location.href = "/login";
-      }
+    const status = error?.response?.status;
+    const requestUrl = error?.config?.url || "";
 
-      if (error.response.status === 500) {
-        console.error("Server error:", error.response.data);
-      }
+    const isAuthAttempt =
+      requestUrl.includes("/users/login") ||
+      requestUrl.includes("/users/register") ||
+      requestUrl.includes("/users/google-login");
+
+    if (status === 401 && !isAuthAttempt) {
+      localStorage.removeItem("nexouraToken");
+      localStorage.removeItem("nexouraUserId");
+      localStorage.removeItem("nexouraRole");
+      window.location.href = "/login";
+    }
+
+    if (status === 500) {
+      console.error("Server error:", error.response?.data);
     }
 
     return Promise.reject(error);

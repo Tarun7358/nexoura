@@ -1,9 +1,10 @@
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { GlowButton } from "../components/GlowButton";
-import { Mail, Lock, User, Gamepad2 } from "lucide-react";
+import { Mail, Lock, User } from "lucide-react";
 import { useState } from "react";
 import { authAPI } from "../api/apiclient";
+import appLogo from "../../styles/logo.jpg";
 
 export default function SignupScreen() {
   const navigate = useNavigate();
@@ -11,10 +12,12 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
 
     try {
       const response = await authAPI.register(username, email, password);
@@ -31,103 +34,97 @@ export default function SignupScreen() {
       navigate("/app");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Signup failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-[#0a0a0f] via-[#1a0a2e] to-[#0a0a0f] flex items-center justify-center px-4 py-4 relative overflow-hidden"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A0A0F] px-4 py-6"
       style={{
-        paddingTop: "max(env(safe-area-inset-top), 12px)",
-        paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
+        paddingTop: "max(env(safe-area-inset-top), 24px)",
+        paddingBottom: "max(env(safe-area-inset-bottom), 24px)",
       }}
     >
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 8, repeat: Infinity }}
-        className="absolute top-10 right-10 w-56 h-56 rounded-full bg-[#a855f7]/10 blur-3xl"
-      />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(124,58,237,0.12),transparent_36%),radial-gradient(circle_at_20%_82%,rgba(0,212,255,0.11),transparent_30%)]" />
 
-      <div className="w-full max-w-md relative z-10 max-h-[92vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-[420px]">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 text-center"
+        >
+          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#13131A] shadow-[0_0_26px_rgba(124,58,237,0.22)]">
+            <img src={appLogo} alt="Nexoura logo" className="h-full w-full object-cover" />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-[0.24em] text-white">NEXOURA</h1>
+          <p className="mt-2 text-sm text-[#A0A0B0]">Compete. Dominate. Rise.</p>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card/85 backdrop-blur-xl border border-border rounded-2xl p-5 sm:p-8 shadow-[0_0_40px_rgba(168,85,247,0.1)]"
+          className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#13131A]/95 p-5 shadow-[0_0_35px_rgba(124,58,237,0.14)] backdrop-blur-xl sm:p-7"
         >
-          <div className="flex justify-center mb-5">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
-              className="bg-gradient-to-br from-[#a855f7] to-[#00d4ff] p-3 rounded-2xl"
-            >
-              <Gamepad2 className="w-9 h-9 text-white" />
-            </motion.div>
-          </div>
+          <h2 className="text-center text-2xl font-semibold text-white">Join Nexoura</h2>
+          <p className="mt-2 text-center text-sm text-[#A0A0B0]">Create your account and start competing</p>
 
-          <h2 className="text-center mb-2 bg-gradient-to-r from-[#a855f7] to-[#00d4ff] bg-clip-text text-transparent">
-            Join Nexoura
-          </h2>
-          <p className="text-center text-muted-foreground mb-6">
-            Create your account and start competing
-          </p>
-
-          <form onSubmit={handleSignup} className="space-y-4">
+          <form onSubmit={handleSignup} className="mt-6 space-y-4">
             {error ? (
-              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 break-words">
-                {error}
-              </div>
+              <div className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</div>
             ) : null}
 
             <div>
-              <label className="block text-sm mb-2">Username</label>
+              <label className="mb-2 block text-sm font-medium text-white">Username</label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <User className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A0A0B0]" />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Choose a username"
-                  className="h-12 w-full rounded-xl border border-border bg-input-background py-3 pr-4 pl-12 transition-all focus:ring-2 focus:ring-secondary focus:outline-none"
+                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm mb-2">Email</label>
+              <label className="mb-2 block text-sm font-medium text-white">Email</label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A0A0B0]" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="h-12 w-full rounded-xl border border-border bg-input-background py-3 pr-4 pl-12 transition-all focus:ring-2 focus:ring-secondary focus:outline-none"
+                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm mb-2">Password</label>
+              <label className="mb-2 block text-sm font-medium text-white">Password</label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A0A0B0]" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
-                  className="h-12 w-full rounded-xl border border-border bg-input-background py-3 pr-4 pl-12 transition-all focus:ring-2 focus:ring-secondary focus:outline-none"
+                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
                 />
               </div>
             </div>
 
-            <GlowButton type="submit" variant="secondary" className="w-full py-3.5">
-              Create Account
+            <GlowButton type="submit" disabled={isSubmitting} className="w-full rounded-xl py-3.5 text-base font-semibold">
+              {isSubmitting ? "Creating account..." : "Create Account"}
             </GlowButton>
           </form>
 
-          <p className="text-center mt-5 text-sm text-muted-foreground">
+          <p className="mt-5 text-center text-sm text-[#A0A0B0]">
             Already have an account?{" "}
-            <button onClick={() => navigate("/login")} className="text-secondary hover:underline">
+            <button onClick={() => navigate("/login")} className="font-medium text-[#00D4FF] hover:text-[#7C3AED]">
               Login
             </button>
           </p>
