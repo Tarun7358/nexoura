@@ -59,26 +59,44 @@ router.post("/", authMiddleware, async (req, res) => {
     }
 
     const {
+      title,
       name,
+      game,
       mode,
       entryFee,
       prizePool,
+      maxPlayers,
       maxParticipants,
-      startDate
+      startTime,
+      startDate,
+      registrationDeadline,
+      bannerImage
     } = req.body;
 
     const tournamentRef = db.collection("tournaments").doc();
+    const normalizedTitle = title || name;
+    const normalizedMaxPlayers = Number(maxPlayers || maxParticipants || 0);
+    const normalizedStart = startTime || startDate || null;
 
     const tournamentData = {
-      name,
-      mode,
-      entryFee,
-      prizePool,
-      maxParticipants,
+      // Keep both title/name and maxPlayers/maxParticipants for frontend compatibility
+      title: normalizedTitle,
+      name: normalizedTitle,
+      game: game || "BGMI",
+      mode: mode || "squad",
+      entryFee: Number(entryFee || 0),
+      prizePool: Number(prizePool || 0),
+      maxPlayers: normalizedMaxPlayers,
+      maxParticipants: normalizedMaxPlayers,
+      registeredPlayers: 0,
       currentParticipants: 0,
       participants: [],
+      status: "Upcoming",
+      bannerImage: bannerImage || null,
+      startTime: normalizedStart,
       createdBy: req.userId,
-      startDate,
+      startDate: normalizedStart,
+      registrationDeadline: registrationDeadline || null,
       createdAt: new Date()
     };
 
@@ -102,20 +120,35 @@ router.post("/:id/join", authMiddleware, async (req, res) => {
 
     const userId = req.userId;
     const tournamentId = req.params.id;
+    const { teamName } = req.body || {};
 
     const tournamentRef = db.collection("tournaments").doc(tournamentId);
+    const userRef = db.collection("users").doc(userId);
+    const registrationId = `${tournamentId}_${userId}`;
+    const registrationRef = db.collection("registrations").doc(registrationId);
 
     await db.runTransaction(async (transaction) => {
 
       const tournamentDoc = await transaction.get(tournamentRef);
+      const userDoc = await transaction.get(userRef);
+      const registrationDoc = await transaction.get(registrationRef);
 
       if (!tournamentDoc.exists) {
         throw new Error("Tournament not found");
       }
+      if (!userDoc.exists) {
+        throw new Error("User not found");
+      }
+      if (registrationDoc.exists) {
+        throw new Error("User already registered");
+      }
 
       const tournament = tournamentDoc.data();
+      const user = userDoc.data();
+      const maxAllowed = Number(tournament.maxPlayers || tournament.maxParticipants || 0);
+      const current = Number(tournament.currentParticipants || tournament.registeredPlayers || 0);
 
-      if (tournament.currentParticipants >= tournament.maxParticipants) {
+      if (maxAllowed > 0 && current >= maxAllowed) {
         throw new Error("Tournament is full");
       }
 
@@ -125,7 +158,19 @@ router.post("/:id/join", authMiddleware, async (req, res) => {
 
       transaction.update(tournamentRef, {
         participants: admin.firestore.FieldValue.arrayUnion(userId),
-        currentParticipants: tournament.currentParticipants + 1
+        currentParticipants: current + 1,
+        registeredPlayers: current + 1
+      });
+
+      transaction.set(registrationRef, {
+        registrationId,
+        tournamentId,
+        userId,
+        username: user.gamerTag || user.username || user.email || "Player",
+        gamingUID: user.gamingUID || "",
+        teamName: teamName || "",
+        paymentStatus: Number(tournament.entryFee || 0) > 0 ? "pending" : "success",
+        registeredAt: new Date()
       });
 
     });

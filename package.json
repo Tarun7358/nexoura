@@ -1,6 +1,12 @@
 {
-  "dependencies": {
-    "git": "^0.1.5"
+  "name": "nexoura-monorepo",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix frontend install && npm --prefix backend install",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix backend start",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev"
   },
   "devDependencies": {
     "@capacitor/android": "^8.1.0",

@@ -134,4 +134,18 @@ export const teamAPI = {
     api.delete(`/teams/${id}`),
 };
 
+export const matchRoomAPI = {
+  create: (data) =>
+    api.post("/match-rooms", data),
+
+  getByTournament: (tournamentId) =>
+    api.get(`/match-rooms/tournament/${tournamentId}`),
+
+  getMyRooms: () =>
+    api.get("/match-rooms/my"),
+
+  update: (roomId, data) =>
+    api.put(`/match-rooms/${roomId}`, data),
+};
+
 export default api;

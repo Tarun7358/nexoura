@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import NeonCard from '../components/NeonCard';
 import NeonButton from '../components/NeonButton';
 import { walletAPI } from '../api/apiclient';
@@ -12,17 +12,18 @@ const Wallet = React.memo(() => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fetch wallet balance
   const fetchBalance = useCallback(async () => {
     try {
       setLoading(true);
       const response = await walletAPI.getBalance();
-      setBalance(response.data.balance);
-      setTotalDeposited(response.data.totalDeposited);
-      setTotalWithdrawn(response.data.totalWithdrawn);
+      setBalance(Number(response.data.balance || 0));
+      setTotalDeposited(Number(response.data.totalDeposited || 0));
+      setTotalWithdrawn(Number(response.data.totalWithdrawn || 0));
       setError(null);
     } catch (err) {
       setError('Failed to fetch wallet balance');
@@ -32,7 +33,6 @@ const Wallet = React.memo(() => {
     }
   }, []);
 
-  // Fetch transactions
   const fetchTransactions = useCallback(async () => {
     try {
       const response = await walletAPI.getTransactions({
@@ -46,37 +46,68 @@ const Wallet = React.memo(() => {
     }
   }, []);
 
-  // Initialize data
   useEffect(() => {
     fetchBalance();
     fetchTransactions();
   }, [fetchBalance, fetchTransactions]);
 
-  // Handle deposit
   const handleDeposit = useCallback(async () => {
-    if (!depositAmount || depositAmount <= 0) {
+    const amount = parseFloat(depositAmount);
+    if (!amount || amount <= 0) {
       setError('Please enter a valid amount');
       return;
     }
 
     try {
       setIsProcessing(true);
-      await walletAPI.deposit(parseFloat(depositAmount), 'upi');
-      setBalance(prev => prev + parseFloat(depositAmount));
-      setTotalDeposited(prev => prev + parseFloat(depositAmount));
+      await walletAPI.deposit(amount, 'upi');
       setDepositAmount('');
       setShowDepositModal(false);
       setError(null);
-      fetchTransactions();
+      await fetchBalance();
+      await fetchTransactions();
     } catch (err) {
       setError('Deposit failed. Please try again.');
       console.error('Deposit error:', err);
     } finally {
       setIsProcessing(false);
     }
-  }, [depositAmount, fetchTransactions]);
+  }, [depositAmount, fetchBalance, fetchTransactions]);
 
-  // Memoized stats
+  const handleWithdraw = useCallback(async () => {
+    const amount = parseFloat(withdrawAmount);
+    if (!amount || amount <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      await walletAPI.withdraw(amount, 'upi');
+      setWithdrawAmount('');
+      setShowWithdrawModal(false);
+      setError(null);
+      await fetchBalance();
+      await fetchTransactions();
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Withdraw failed. Please try again.');
+      console.error('Withdraw error:', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [withdrawAmount, fetchBalance, fetchTransactions]);
+
+  const formatTxDate = useCallback((createdAt) => {
+    if (!createdAt) return '-';
+    if (typeof createdAt === 'string' || createdAt instanceof Date) {
+      return new Date(createdAt).toLocaleDateString();
+    }
+    if (createdAt?._seconds) {
+      return new Date(createdAt._seconds * 1000).toLocaleDateString();
+    }
+    return '-';
+  }, []);
+
   const stats = useMemo(() => ({
     deposited: totalDeposited,
     withdrawn: totalWithdrawn,
@@ -100,12 +131,12 @@ const Wallet = React.memo(() => {
     <div className="container slide-in-up">
       <div className="header">
         <h2 style={{ margin: 0 }}>Wallet</h2>
-        <button 
+        <button
           onClick={fetchBalance}
           className="neon-button ghost"
           style={{ padding: '8px 12px' }}
         >
-          ↻
+          Refresh
         </button>
       </div>
 
@@ -123,41 +154,37 @@ const Wallet = React.memo(() => {
         </div>
       )}
 
-      {/* Balance Display */}
       <NeonCard style={{ marginBottom: '12px' }}>
         <div style={{ fontWeight: 800, fontSize: '32px', color: '#00d4ff' }}>
-          ₹{balance.toFixed(2)}
+          Rs.{balance.toFixed(2)}
         </div>
         <div className="small-muted">Available Balance</div>
       </NeonCard>
 
-      {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         <NeonCard>
           <div style={{ fontSize: '12px', color: '#9b59ff' }}>Total Deposited</div>
           <div style={{ fontWeight: 700, fontSize: '18px', marginTop: '6px' }}>
-            ₹{stats.deposited.toFixed(2)}
+            Rs.{stats.deposited.toFixed(2)}
           </div>
         </NeonCard>
         <NeonCard>
           <div style={{ fontSize: '12px', color: '#00d4ff' }}>Total Withdrawn</div>
           <div style={{ fontWeight: 700, fontSize: '18px', marginTop: '6px' }}>
-            ₹{stats.withdrawn.toFixed(2)}
+            Rs.{stats.withdrawn.toFixed(2)}
           </div>
         </NeonCard>
       </div>
 
-      {/* Action Buttons */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
         <NeonButton onClick={() => setShowDepositModal(true)}>
-          Add Funds ➕
+          Add Funds +
         </NeonButton>
-        <NeonButton className="ghost">
-          Withdraw 💸
+        <NeonButton className="ghost" onClick={() => setShowWithdrawModal(true)}>
+          Withdraw -
         </NeonButton>
       </div>
 
-      {/* Transactions */}
       {transactions.length > 0 && (
         <div>
           <h3 style={{ marginTop: '24px', marginBottom: '12px' }}>Recent</h3>
@@ -165,14 +192,14 @@ const Wallet = React.memo(() => {
             <NeonCard key={tx.id || tx._id} style={{ marginBottom: '8px', cursor: 'pointer' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{tx.type.toUpperCase()}</div>
-                  <div className="small-muted">{new Date(tx.createdAt).toLocaleDateString()}</div>
+                  <div style={{ fontWeight: 600 }}>{String(tx.type || '').toUpperCase()}</div>
+                  <div className="small-muted">{formatTxDate(tx.createdAt)}</div>
                 </div>
                 <div style={{
                   color: tx.type === 'deposit' || tx.type === 'reward' ? '#00d4ff' : '#ff6464',
                   fontWeight: 700,
                 }}>
-                  {tx.type === 'deposit' || tx.type === 'reward' ? '+' : '-'}₹{tx.amount}
+                  {tx.type === 'deposit' || tx.type === 'reward' ? '+' : '-'}Rs.{tx.amount}
                 </div>
               </div>
             </NeonCard>
@@ -180,7 +207,6 @@ const Wallet = React.memo(() => {
         </div>
       )}
 
-      {/* Deposit Modal */}
       {showDepositModal && (
         <div style={{
           position: 'fixed',
@@ -198,7 +224,7 @@ const Wallet = React.memo(() => {
             <h3>Add Funds</h3>
             <input
               type="number"
-              placeholder="Enter amount (₹)"
+              placeholder="Enter amount (Rs.)"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
               style={{
@@ -215,18 +241,70 @@ const Wallet = React.memo(() => {
               disabled={isProcessing}
             />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <NeonButton 
+              <NeonButton
                 className="ghost"
                 onClick={() => setShowDepositModal(false)}
                 disabled={isProcessing}
               >
                 Cancel
               </NeonButton>
-              <NeonButton 
+              <NeonButton
                 onClick={handleDeposit}
                 disabled={isProcessing}
               >
                 {isProcessing ? 'Processing...' : 'Deposit'}
+              </NeonButton>
+            </div>
+          </NeonCard>
+        </div>
+      )}
+
+      {showWithdrawModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <NeonCard style={{ width: '90%', maxWidth: '400px', padding: '24px' }}>
+            <h3>Withdraw Funds</h3>
+            <input
+              type="number"
+              placeholder="Enter amount (Rs.)"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                marginTop: '12px',
+                marginBottom: '12px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                color: '#e6e6f0',
+                fontSize: '14px',
+              }}
+              disabled={isProcessing}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <NeonButton
+                className="ghost"
+                onClick={() => setShowWithdrawModal(false)}
+                disabled={isProcessing}
+              >
+                Cancel
+              </NeonButton>
+              <NeonButton
+                onClick={handleWithdraw}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Withdraw'}
               </NeonButton>
             </div>
           </NeonCard>

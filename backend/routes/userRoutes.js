@@ -41,9 +41,10 @@ const generateUniqueGamerTag = async (seed) => {
 
 router.post("/register", async (req, res) => {
   try {
-    const { gamerTag, email, password } = req.body;
+    const { gamerTag, username, email, password, gamingUID } = req.body;
+    const finalUsername = username || gamerTag;
 
-    if (!gamerTag || !email || !password) {
+    if (!finalUsername || !email || !password) {
       return res.status(400).json({ message: "Please provide all fields" });
     }
 
@@ -60,7 +61,7 @@ router.post("/register", async (req, res) => {
     // Check existing gamerTag
     const gamerTagSnapshot = await db
       .collection("users")
-      .where("gamerTag", "==", gamerTag)
+      .where("gamerTag", "==", finalUsername)
       .get();
 
     if (!gamerTagSnapshot.empty) {
@@ -74,11 +75,18 @@ router.post("/register", async (req, res) => {
     const userRef = db.collection("users").doc();
 
     const userData = {
-      gamerTag,
+      username: finalUsername,
+      gamerTag: finalUsername,
       email,
+      profileImage: null,
+      gamingUID: gamingUID || "",
       password: hashedPassword,
       provider: "password",
       balance: 100,
+      tournamentsJoined: 0,
+      wins: 0,
+      kills: 0,
+      earnings: 0,
       stats: {
         wins: 0,
         matches: 0,
@@ -106,8 +114,10 @@ router.post("/register", async (req, res) => {
       userId: userRef.id,
       user: {
         id: userRef.id,
-        gamerTag,
+        username: finalUsername,
+        gamerTag: finalUsername,
         email,
+        gamingUID: gamingUID || "",
         balance: 100,
         walletId: walletRef.id,
         role: "user",
@@ -153,8 +163,14 @@ router.post("/login", async (req, res) => {
       userId: userDoc.id,
       user: {
         id: userDoc.id,
+        username: user.username || user.gamerTag,
         gamerTag: user.gamerTag,
         email: user.email,
+        gamingUID: user.gamingUID || "",
+        tournamentsJoined: Number(user.tournamentsJoined || 0),
+        wins: Number(user.wins || 0),
+        kills: Number(user.kills || 0),
+        earnings: Number(user.earnings || 0),
         balance: user.balance,
         stats: user.stats,
         role: user.role,
@@ -197,11 +213,17 @@ router.post("/google-login", async (req, res) => {
       const gamerTag = await generateUniqueGamerTag(baseName);
 
       userData = {
+        username: gamerTag,
         gamerTag,
         email,
-        avatar: decodedToken.picture || null,
+        profileImage: decodedToken.picture || null,
+        gamingUID: "",
         provider: "google",
         balance: 100,
+        tournamentsJoined: 0,
+        wins: 0,
+        kills: 0,
+        earnings: 0,
         stats: {
           wins: 0,
           matches: 0,
@@ -233,7 +255,7 @@ router.post("/google-login", async (req, res) => {
       }
 
       await userRef.update({
-        avatar: decodedToken.picture || userData.avatar || null,
+        profileImage: decodedToken.picture || userData.profileImage || null,
         updatedAt: new Date(),
       });
     }
@@ -245,9 +267,15 @@ router.post("/google-login", async (req, res) => {
       userId: uid,
       user: {
         id: uid,
+        username: userData.username || userData.gamerTag,
         gamerTag: userData.gamerTag,
         email,
-        avatar: decodedToken.picture || userData.avatar || null,
+        profileImage: decodedToken.picture || userData.profileImage || null,
+        gamingUID: userData.gamingUID || "",
+        tournamentsJoined: Number(userData.tournamentsJoined || 0),
+        wins: Number(userData.wins || 0),
+        kills: Number(userData.kills || 0),
+        earnings: Number(userData.earnings || 0),
         balance: userData.balance ?? 100,
         stats: userData.stats || { wins: 0, matches: 0, points: 0 },
         role: userData.role || "user",
@@ -288,13 +316,15 @@ router.put("/:userId", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    const { gamerTag, avatar, phone } = req.body;
+    const { gamerTag, username, profileImage, gamingUID, avatar, phone } = req.body;
 
     const userRef = db.collection("users").doc(req.params.userId);
 
     await userRef.update({
-      gamerTag,
-      avatar,
+      gamerTag: gamerTag || username,
+      username: username || gamerTag,
+      profileImage: profileImage || avatar || null,
+      gamingUID: gamingUID || "",
       phone,
       updatedAt: new Date(),
     });

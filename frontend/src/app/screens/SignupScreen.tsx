@@ -81,13 +81,13 @@ export default function SignupScreen() {
             <div>
               <label className="block text-sm mb-2">Username</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <User className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Choose a username"
-                  className="w-full bg-input-background border border-border rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
+                  className="h-12 w-full rounded-xl border border-border bg-input-background py-3 pr-4 pl-12 transition-all focus:ring-2 focus:ring-secondary focus:outline-none"
                 />
               </div>
             </div>
@@ -95,13 +95,13 @@ export default function SignupScreen() {
             <div>
               <label className="block text-sm mb-2">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="w-full bg-input-background border border-border rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
+                  className="h-12 w-full rounded-xl border border-border bg-input-background py-3 pr-4 pl-12 transition-all focus:ring-2 focus:ring-secondary focus:outline-none"
                 />
               </div>
             </div>
@@ -109,13 +109,13 @@ export default function SignupScreen() {
             <div>
               <label className="block text-sm mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Lock className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
-                  className="w-full bg-input-background border border-border rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-secondary transition-all"
+                  className="h-12 w-full rounded-xl border border-border bg-input-background py-3 pr-4 pl-12 transition-all focus:ring-2 focus:ring-secondary focus:outline-none"
                 />
               </div>
             </div>
