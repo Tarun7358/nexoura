@@ -41,7 +41,7 @@ export default function SignupScreen() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A0A0F] px-4 py-6"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A0A0F] px-3 py-4 sm:px-4 sm:py-6"
       style={{
         paddingTop: "max(env(safe-area-inset-top), 24px)",
         paddingBottom: "max(env(safe-area-inset-bottom), 24px)",
@@ -49,28 +49,28 @@ export default function SignupScreen() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(124,58,237,0.12),transparent_36%),radial-gradient(circle_at_20%_82%,rgba(0,212,255,0.11),transparent_30%)]" />
 
-      <div className="relative z-10 w-full max-w-[420px]">
+      <div className="relative z-10 w-full max-w-[420px] max-h-[100dvh] overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 text-center"
         >
-          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#13131A] shadow-[0_0_26px_rgba(124,58,237,0.22)]">
+          <div className="mx-auto mb-3 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#13131A] shadow-[0_0_26px_rgba(124,58,237,0.22)] sm:h-20 sm:w-20">
             <img src={appLogo} alt="Nexoura logo" className="h-full w-full object-cover" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-[0.24em] text-white">NEXOURA</h1>
+          <h1 className="text-xl font-semibold tracking-[0.18em] text-white sm:text-2xl sm:tracking-[0.24em]">NEXOURA</h1>
           <p className="mt-2 text-sm text-[#A0A0B0]">Compete. Dominate. Rise.</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#13131A]/95 p-5 shadow-[0_0_35px_rgba(124,58,237,0.14)] backdrop-blur-xl sm:p-7"
+          className="mx-auto rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#13131A]/95 p-4 shadow-[0_0_35px_rgba(124,58,237,0.14)] backdrop-blur-xl sm:p-7"
         >
-          <h2 className="text-center text-2xl font-semibold text-white">Join Nexoura</h2>
+          <h2 className="text-center text-xl font-semibold text-white sm:text-2xl">Join Nexoura</h2>
           <p className="mt-2 text-center text-sm text-[#A0A0B0]">Create your account and start competing</p>
 
-          <form onSubmit={handleSignup} className="mt-6 space-y-4">
+          <form onSubmit={handleSignup} className="mt-5 space-y-3.5 sm:mt-6 sm:space-y-4">
             {error ? (
               <div className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</div>
             ) : null}
@@ -84,7 +84,7 @@ export default function SignupScreen() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Choose a username"
-                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
+                  className="h-11 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-2.5 pr-4 pl-11 text-sm text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none sm:h-12 sm:py-3"
                 />
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function SignupScreen() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
+                  className="h-11 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-2.5 pr-4 pl-11 text-sm text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none sm:h-12 sm:py-3"
                 />
               </div>
             </div>
@@ -112,7 +112,7 @@ export default function SignupScreen() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
-                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
+                  className="h-11 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-2.5 pr-4 pl-11 text-sm text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none sm:h-12 sm:py-3"
                 />
               </div>
             </div>

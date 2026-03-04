@@ -126,7 +126,7 @@ export default function LoginScreen() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A0A0F] px-4 py-6"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0A0A0F] px-3 py-4 sm:px-4 sm:py-6"
       style={{
         paddingTop: "max(env(safe-area-inset-top), 24px)",
         paddingBottom: "max(env(safe-area-inset-bottom), 24px)",
@@ -134,28 +134,28 @@ export default function LoginScreen() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(0,212,255,0.11),transparent_36%),radial-gradient(circle_at_18%_78%,rgba(124,58,237,0.13),transparent_30%)]" />
 
-      <div className="relative z-10 w-full max-w-[420px]">
+      <div className="relative z-10 w-full max-w-[420px] max-h-[100dvh] overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 text-center"
         >
-          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#13131A] shadow-[0_0_26px_rgba(0,212,255,0.22)]">
+          <div className="mx-auto mb-3 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#13131A] shadow-[0_0_26px_rgba(0,212,255,0.22)] sm:h-20 sm:w-20">
             <img src={appLogo} alt="Nexoura logo" className="h-full w-full object-cover" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-[0.24em] text-white">NEXOURA</h1>
+          <h1 className="text-xl font-semibold tracking-[0.18em] text-white sm:text-2xl sm:tracking-[0.24em]">NEXOURA</h1>
           <p className="mt-2 text-sm text-[#A0A0B0]">Compete. Dominate. Rise.</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#13131A]/95 p-5 shadow-[0_0_35px_rgba(0,212,255,0.14)] backdrop-blur-xl sm:p-7"
+          className="mx-auto rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#13131A]/95 p-4 shadow-[0_0_35px_rgba(0,212,255,0.14)] backdrop-blur-xl sm:p-7"
         >
-          <h2 className="text-center text-2xl font-semibold text-white">Welcome Back</h2>
+          <h2 className="text-center text-xl font-semibold text-white sm:text-2xl">Welcome Back</h2>
           <p className="mt-2 text-center text-sm text-[#A0A0B0]">Login to continue your esports journey</p>
 
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
+          <form onSubmit={handleLogin} className="mt-5 space-y-3.5 sm:mt-6 sm:space-y-4">
             {error ? (
               <div className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</div>
             ) : null}
@@ -173,7 +173,7 @@ export default function LoginScreen() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
+                  className="h-11 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-2.5 pr-4 pl-11 text-sm text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none sm:h-12 sm:py-3"
                 />
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function LoginScreen() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="h-12 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-3 pr-4 pl-11 text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none"
+                  className="h-11 w-full rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] py-2.5 pr-4 pl-11 text-sm text-white placeholder:text-[#A0A0B0] transition-all duration-200 focus:border-[#00D4FF] focus:shadow-[0_0_0_3px_rgba(0,212,255,0.18)] focus:outline-none sm:h-12 sm:py-3"
                 />
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function LoginScreen() {
               type="button"
               onClick={handlePasswordReset}
               disabled={isResetLoading}
-              className="text-sm text-[#00D4FF] transition-colors hover:text-[#7C3AED] disabled:opacity-60"
+              className="appearance-none border-0 bg-transparent p-0 text-sm text-[#00D4FF] transition-colors hover:text-[#7C3AED] disabled:opacity-60"
             >
               {isResetLoading ? "Sending reset email..." : "Forgot Password?"}
             </button>
@@ -206,7 +206,7 @@ export default function LoginScreen() {
             </GlowButton>
           </form>
 
-          <div className="my-5 flex items-center gap-3">
+          <div className="my-4 flex items-center gap-3 sm:my-5">
             <div className="h-px flex-1 bg-[rgba(255,255,255,0.08)]" />
             <span className="text-xs tracking-[0.24em] text-[#A0A0B0]">OR</span>
             <div className="h-px flex-1 bg-[rgba(255,255,255,0.08)]" />
@@ -215,7 +215,7 @@ export default function LoginScreen() {
           <button
             onClick={handleGoogleLogin}
             disabled={isGoogleLoading}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] px-4 text-sm font-semibold text-white transition-all duration-200 hover:border-[#00D4FF]/70 hover:bg-[#1d1d29] disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center gap-2.5 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#1A1A24] px-3 text-sm font-semibold text-white transition-all duration-200 hover:border-[#00D4FF]/70 hover:bg-[#1d1d29] disabled:opacity-60 sm:h-12 sm:gap-3 sm:px-4"
           >
             <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -235,7 +235,7 @@ export default function LoginScreen() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {isGoogleLoading ? "Connecting..." : "Continue with Google"}
+            <span className="truncate">{isGoogleLoading ? "Connecting..." : "Continue with Google"}</span>
           </button>
 
           <p className="mt-5 text-center text-sm text-[#A0A0B0]">
